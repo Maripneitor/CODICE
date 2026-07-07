@@ -108,8 +108,10 @@ export default function UsersPage() {
         throw new Error('Error al obtener la lista de usuarios. Asegúrese de tener privilegios de Administrador.');
       }
       const data = await response.json();
-      setUsers(data.users);
-      setTotal(data.total);
+      const usersData = data.data?.users || data.users || [];
+      const totalData = data.data?.total !== undefined ? data.data.total : (data.total || 0);
+      setUsers(usersData);
+      setTotal(totalData);
     } catch (err: any) {
       setError(err.message || 'Error de conexión.');
     } finally {
