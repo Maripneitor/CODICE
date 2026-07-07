@@ -87,6 +87,19 @@ export default function UsersPage() {
   }, [router]);
 
   const fetchUsers = useCallback(async () => {
+    // Prevent fetching if not authenticated yet
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return '';
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || '';
+      return '';
+    };
+    if (!getCookie('auth_token')) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -391,7 +404,7 @@ export default function UsersPage() {
                                       : 'bg-slate-500'
                                   }`}
                                 ></span>
-                                {user.status}
+                                {user.status === 'ACTIVE' ? 'ACTIVO' : user.status === 'SUSPENDED' ? 'SUSPENDIDO' : 'INACTIVO'}
                               </span>
                               {user.deletedAt && (
                                 <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded bg-red-950 text-red-400 text-[10px] uppercase font-bold border border-red-900/30">
@@ -510,9 +523,9 @@ export default function UsersPage() {
                     onChange={(e) => setEditStatus(e.target.value as any)}
                     className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg p-2.5 focus:outline-none focus:border-amber-500 font-mono"
                   >
-                    <option value="ACTIVE">ACTIVE (Operativo)</option>
-                    <option value="SUSPENDED">SUSPENDED (Acceso Revocado)</option>
-                    <option value="INACTIVE">INACTIVE (Sin Actividad)</option>
+                    <option value="ACTIVE">ACTIVO (Operativo)</option>
+                    <option value="SUSPENDED">SUSPENDIDO (Acceso Revocado)</option>
+                    <option value="INACTIVE">INACTIVO (Sin Actividad)</option>
                   </select>
                   {editStatus === 'SUSPENDED' && (
                     <p className="text-[11px] text-rose-400 font-medium">
