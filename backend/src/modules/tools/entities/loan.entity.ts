@@ -1,7 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Tool } from './tool.entity';
 import { User } from '../../auth/user.entity';
 import { EncryptionTransformer } from '../../../common/transformers/encryption.transformer';
+import { LoanDetail } from './loan-detail.entity';
 
 @Entity('loans')
 export class Loan {
@@ -49,13 +50,8 @@ export class Loan {
   @JoinColumn({ name: 'delivering_user_id' })
   deliveringUser: User;
 
-  @ManyToMany(() => Tool, { eager: true })
-  @JoinTable({
-    name: 'loan_tools',
-    joinColumn: { name: 'loan_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'tool_id', referencedColumnName: 'id' }
-  })
-  tools: Tool[];
+  @OneToMany(() => LoanDetail, (detail) => detail.loan, { cascade: true, eager: true })
+  details: LoanDetail[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

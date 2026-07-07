@@ -22,6 +22,7 @@ import { ToolStatus } from './modules/tools/entities/tool-status.entity';
 import { ToolType } from './modules/tools/entities/tool-type.entity';
 import { Category } from './modules/tools/entities/category.entity';
 import { Loan } from './modules/tools/entities/loan.entity';
+import { LoanDetail } from './modules/tools/entities/loan-detail.entity';
 
 @Module({
   imports: [
@@ -40,7 +41,7 @@ import { Loan } from './modules/tools/entities/loan.entity';
           return {
             type: 'postgres',
             url: dbUrl,
-            entities: [User, Role, Permission, Artifact, ArtifactMovement, LoanTransaction, SyncConflict, Tool, ToolStatus, ToolType, Category, Loan],
+            entities: [User, Role, Permission, Artifact, ArtifactMovement, LoanTransaction, SyncConflict, Tool, ToolStatus, ToolType, Category, Loan, LoanDetail],
             synchronize: false, // Mantener estrictamente en false para proteger el esquema remoto
             ssl: {
               rejectUnauthorized: false, // Requerido por Render para el certificado SSL del tier gratuito
@@ -54,7 +55,7 @@ import { Loan } from './modules/tools/entities/loan.entity';
           username: configService.get<string>('DB_USERNAME', 'admin'),
           password: configService.get<string>('DB_PASSWORD', 'supersecretpassword'),
           database: configService.get<string>('DB_NAME', 'codice_db'),
-          entities: [User, Role, Permission, Artifact, ArtifactMovement, LoanTransaction, SyncConflict, Tool, ToolStatus, ToolType, Category, Loan],
+          entities: [User, Role, Permission, Artifact, ArtifactMovement, LoanTransaction, SyncConflict, Tool, ToolStatus, ToolType, Category, Loan, LoanDetail],
           synchronize: true, // true only for development
         };
       },

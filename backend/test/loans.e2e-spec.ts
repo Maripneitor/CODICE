@@ -113,13 +113,7 @@ describe('LoansController (e2e)', () => {
   afterAll(async () => {
     try {
       if (createdLoanId) {
-        // Many-to-many clean up
-        const l = await loanRepo.findOne({ where: { id: createdLoanId }, relations: { tools: true } });
-        if (l) {
-          l.tools = [];
-          await loanRepo.save(l);
-          await loanRepo.delete(createdLoanId);
-        }
+        await loanRepo.delete(createdLoanId);
       }
       if (toolId1) await toolRepo.delete(toolId1);
       if (toolId2) await toolRepo.delete(toolId2);

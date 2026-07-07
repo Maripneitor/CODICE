@@ -6,6 +6,7 @@ import { ToolStatus } from './entities/tool-status.entity';
 import { ToolType } from './entities/tool-type.entity';
 import { Category } from './entities/category.entity';
 import { Loan } from './entities/loan.entity';
+import { LoanDetail } from './entities/loan-detail.entity';
 import { User } from '../auth/user.entity';
 import { CreateToolDto, UpdateToolDto, ChangeStatusDto, SearchToolsDto } from './dto/tools.dto';
 import { CreateLoanDto, ReturnLoanDto, ReportQueryDto } from './dto/loans.dto';
@@ -376,11 +377,6 @@ export class ToolsService {
         throw new NotFoundException('Estado PRESTADO no encontrado.');
       }
 
-      for (const tool of tools) {
-        tool.status = prestadoStatus;
-        await manager.save(tool);
-      }
-
       // 4. Calculate dueDate (default 7 days)
       const parsedDueDate = dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       if (parsedDueDate.getTime() < Date.now()) {
@@ -393,14 +389,30 @@ export class ToolsService {
         status: 'ACTIVE',
         requestingUser,
         deliveringUser,
-        tools,
         requestIp,
         requestDevice,
         applicantNotes: applicantNotes || null,
         signature: signature || null,
       });
 
-      return manager.save(loan);
+      const savedLoan = await manager.save(loan);
+
+      const loanDetails: LoanDetail[] = [];
+      for (const tool of tools) {
+        tool.status = prestadoStatus;
+        await manager.save(tool);
+
+        const detail = manager.create(LoanDetail, {
+          loan: savedLoan,
+          tool,
+          status: 'ACTIVE',
+          penalty: 0,
+        });
+        loanDetails.push(await manager.save(detail));
+      }
+
+      savedLoan.details = loanDetails;
+      return savedLoan;
     });
   }
 
@@ -409,7 +421,7 @@ export class ToolsService {
 
     const loan = await this.loanRepository.findOne({
       where: { id },
-      relations: { tools: true, requestingUser: true, deliveringUser: true }
+      relations: { details: true, requestingUser: true, deliveringUser: true }
     });
     if (!loan) {
       throw new NotFoundException('Préstamo no encontrado.');
@@ -454,7 +466,14 @@ export class ToolsService {
         throw new NotFoundException(`Estado ${targetStatusName} no encontrado.`);
       }
 
-      for (const tool of loan.tools) {
+      for (const detail of loan.details) {
+        detail.returnDate = now;
+        detail.status = 'RETURNED';
+        detail.returnCondition = returnCondition;
+        detail.penalty = penalty / loan.details.length;
+        await manager.save(detail);
+
+        const tool = detail.tool;
         tool.status = toolStatus;
         await manager.save(tool);
       }
@@ -487,7 +506,8 @@ export class ToolsService {
   async generateReport(queryDto: ReportQueryDto): Promise<any[]> {
     const { startDate, endDate, limit = 100 } = queryDto;
     const query = this.loanRepository.createQueryBuilder('loan')
-      .leftJoinAndSelect('loan.tools', 'tools')
+      .leftJoinAndSelect('loan.details', 'details')
+      .leftJoinAndSelect('details.tool', 'tool')
       .leftJoinAndSelect('loan.requestingUser', 'requestingUser')
       .leftJoinAndSelect('loan.deliveringUser', 'deliveringUser');
 
@@ -539,7 +559,7 @@ export class ToolsService {
     let csv = 'ID Préstamo,Fecha Préstamo,Fecha Límite,Estado,Multa,Condición,Acta,IP,Dispositivo,Solicitante,Entregador,Herramientas\n';
     
     for (const loan of data) {
-      const toolsStr = loan.tools.map((t: any) => `${t.name} (${t.code})`).join(' | ');
+      const toolsStr = loan.details.map((d: any) => `${d.tool.name} (${d.tool.code})`).join(' | ');
       const reqUserStr = loan.requestingUser ? loan.requestingUser.email : 'N/A';
       const delUserStr = loan.deliveringUser ? loan.deliveringUser.email : 'N/A';
       
