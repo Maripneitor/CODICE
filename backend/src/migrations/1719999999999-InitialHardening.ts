@@ -80,24 +80,22 @@ export class InitialHardening1719999999999 implements MigrationInterface {
             await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_users_role" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE SET NULL`);
         }
 
-        // Migrate existing users roles to new schema
-        const adminRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'ADMIN' LIMIT 1`);
-        const techRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'TECHNICIAN' LIMIT 1`);
-        const viewerRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'AUDITOR' LIMIT 1`); // Map viewer/restorer to auditor or default roles
-
-        if (adminRole && adminRole.length > 0) {
-            await queryRunner.query(`UPDATE users SET role_id = '${adminRole[0].id}' WHERE role = 'admin' OR role = 'ADMIN'`);
-        }
-        if (techRole && techRole.length > 0) {
-            await queryRunner.query(`UPDATE users SET role_id = '${techRole[0].id}' WHERE role = 'technician' OR role = 'TECHNICIAN' OR role = 'restorer'`);
-        }
-        if (viewerRole && viewerRole.length > 0) {
-            await queryRunner.query(`UPDATE users SET role_id = '${viewerRole[0].id}' WHERE role_id IS NULL`);
-        }
-
-        // Drop the old role string column if it exists
+        // Migrate existing users roles to new schema if the old role column exists
         const roleColExists = await queryRunner.hasColumn("users", "role");
         if (roleColExists) {
+            const adminRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'ADMIN' LIMIT 1`);
+            const techRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'TECHNICIAN' LIMIT 1`);
+            const viewerRole = await queryRunner.query(`SELECT id FROM roles WHERE name = 'AUDITOR' LIMIT 1`); // Map viewer/restorer to auditor or default roles
+
+            if (adminRole && adminRole.length > 0) {
+                await queryRunner.query(`UPDATE users SET role_id = '${adminRole[0].id}' WHERE role = 'admin' OR role = 'ADMIN'`);
+            }
+            if (techRole && techRole.length > 0) {
+                await queryRunner.query(`UPDATE users SET role_id = '${techRole[0].id}' WHERE role = 'technician' OR role = 'TECHNICIAN' OR role = 'restorer'`);
+            }
+            if (viewerRole && viewerRole.length > 0) {
+                await queryRunner.query(`UPDATE users SET role_id = '${viewerRole[0].id}' WHERE role_id IS NULL`);
+            }
             await queryRunner.query(`ALTER TABLE "users" DROP COLUMN "role"`);
         }
     }
