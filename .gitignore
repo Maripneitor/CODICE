@@ -35,3 +35,7 @@ lerna-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Scratch and test files containing credentials
+backend/test-*.js
+
